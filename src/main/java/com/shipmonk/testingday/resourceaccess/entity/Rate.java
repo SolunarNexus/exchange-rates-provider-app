@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 @Entity
 @Table(name = "rate")
@@ -60,6 +61,21 @@ public class Rate
     public BigDecimal getRate()
     {
         return rate;
+    }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        return this == other
+            || other instanceof Rate that
+            && Objects.equals(getRatesSnapshot(), that.getRatesSnapshot())
+            && Objects.equals(getCurrency(), that.getCurrency());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(getRatesSnapshot(), getCurrency());
     }
 
 }

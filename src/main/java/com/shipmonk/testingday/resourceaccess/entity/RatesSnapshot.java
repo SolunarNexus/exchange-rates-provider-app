@@ -12,9 +12,10 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "rates_snapshot")
@@ -35,7 +36,7 @@ public class RatesSnapshot
     private Instant fetchedAt;
 
     @OneToMany(mappedBy = "ratesSnapshot", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Rate> rates = new ArrayList<>();
+    private Set<Rate> rates = new HashSet<>();
 
     protected RatesSnapshot()
     {
@@ -48,13 +49,12 @@ public class RatesSnapshot
         this.fetchedAt = fetchedAt;
     }
 
-    /**
-     * Adds a rate through the owning side, so both ends of the association stay in sync.
-     */
     public Rate addRate(String currency, BigDecimal value)
     {
         Rate rate = new Rate(this, currency, value);
-        rates.add(rate);
+        if (!rates.add(rate))
+            throw new IllegalArgumentException("Snapshot already has a rate for currency " + currency);
+
         return rate;
     }
 
@@ -78,9 +78,22 @@ public class RatesSnapshot
         return fetchedAt;
     }
 
-    public List<Rate> getRates()
+    public Set<Rate> getRates()
     {
-        return Collections.unmodifiableList(rates);
+        return Collections.unmodifiableSet(rates);
+    }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        return this == other
+            || other instanceof RatesSnapshot snapshot && Objects.equals(getDate(), snapshot.getDate());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hashCode(getDate());
     }
 
 }
