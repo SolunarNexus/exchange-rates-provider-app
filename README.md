@@ -223,3 +223,4 @@ Tests never call Fixer: the test configuration uses a dummy access key, and the 
   healthcheck.
 - **Introduce dev/test/prod profiles** Some features such as Swagger should be disabled in production and with more tests, specific configuration would be a nice-to-have.
 - **Logging**
+- **CI/CD** run certain stages (build, test, run) during development in a pipeline
