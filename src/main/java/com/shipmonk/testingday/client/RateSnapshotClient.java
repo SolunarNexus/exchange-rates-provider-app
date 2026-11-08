@@ -1,5 +1,6 @@
 package com.shipmonk.testingday.client;
 
+import com.shipmonk.testingday.model.RatesSnapshotData;
 import java.time.LocalDate;
 
 public interface RateSnapshotClient

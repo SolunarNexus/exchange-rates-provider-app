@@ -2,33 +2,46 @@ package com.shipmonk.testingday.manager;
 
 import com.shipmonk.testingday.client.FixerClientException;
 import com.shipmonk.testingday.client.RateSnapshotClient;
-import com.shipmonk.testingday.client.RatesSnapshotData;
+import com.shipmonk.testingday.engine.BaseCurrency;
+import com.shipmonk.testingday.engine.ComputingEngine;
 import com.shipmonk.testingday.engine.ValidatingEngine;
+import com.shipmonk.testingday.model.RatesSnapshotData;
 import com.shipmonk.testingday.resourceaccess.RatesSnapshotRepository;
+import com.shipmonk.testingday.resourceaccess.entity.Rate;
 import com.shipmonk.testingday.resourceaccess.entity.RatesSnapshot;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class RatesManagerImpl implements RatesManager {
 
+    // Snapshots are stored in Fixer's base currency (EUR) and converted on retrieval.
+    // Clients cannot choose the base yet, so it is fixed here.
+    private static final BaseCurrency RESPONSE_BASE_CURRENCY = BaseCurrency.USD;
+
     private final RatesSnapshotRepository ratesSnapshotRepository;
     private final RateSnapshotClient rateSnapshotClient;
     private final ValidatingEngine validatingEngine;
+    private final ComputingEngine computingEngine;
 
     public RatesManagerImpl(
         RatesSnapshotRepository ratesSnapshotRepository,
         RateSnapshotClient rateSnapshotClient,
-        ValidatingEngine validatingEngine
+        ValidatingEngine validatingEngine,
+        ComputingEngine computingEngine
     ) {
         this.ratesSnapshotRepository = ratesSnapshotRepository;
         this.rateSnapshotClient = rateSnapshotClient;
         this.validatingEngine = validatingEngine;
+        this.computingEngine = computingEngine;
     }
 
     // Runs outside any caller's transaction: the HTTP call should not hold a database connection,
@@ -36,14 +49,13 @@ public class RatesManagerImpl implements RatesManager {
     // which is impossible inside a transaction the failed insert has already aborted.
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public RatesSnapshot getSnapshot(LocalDate day) {
+    public RatesSnapshotData getSnapshot(LocalDate day) {
         validatingEngine.validate(day);
 
-        return ratesSnapshotRepository.findByDate(day)
-            .orElseGet(() -> {
-                RatesSnapshot snapshot = tryFetchSnapshot(day);
-                return saveSnapshot(snapshot);
-            });
+        RatesSnapshot snapshot = ratesSnapshotRepository.findByDate(day)
+            .orElseGet(() -> saveSnapshot(tryFetchSnapshot(day)));
+
+        return computingEngine.convertToBaseCurrency(toData(snapshot), RESPONSE_BASE_CURRENCY);
     }
 
     private RatesSnapshot tryFetchSnapshot(LocalDate day) {
@@ -63,13 +75,18 @@ public class RatesManagerImpl implements RatesManager {
         }
     }
 
-    /**
-     * Maps provider data to a new, unsaved snapshot stored under the requested day.
-     */
     private static RatesSnapshot toSnapshot(LocalDate day, RatesSnapshotData data) {
         RatesSnapshot snapshot = new RatesSnapshot(day, data.baseCurrency(), Instant.now());
         data.rates().forEach(snapshot::addRate);
         return snapshot;
+    }
+
+    private static RatesSnapshotData toData(RatesSnapshot snapshot) {
+        Map<String, BigDecimal> rates = new HashMap<>();
+        for (Rate rate : snapshot.getRates())
+            rates.put(rate.getCurrency(), rate.getRate());
+
+        return new RatesSnapshotData(snapshot.getDate(), snapshot.getBaseCurrency(), rates);
     }
 
 }

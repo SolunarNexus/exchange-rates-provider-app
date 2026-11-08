@@ -2,7 +2,7 @@ package com.shipmonk.testingday.client.api;
 
 import com.shipmonk.testingday.config.TimeConfig;
 import com.shipmonk.testingday.manager.RatesManager;
-import com.shipmonk.testingday.resourceaccess.entity.RatesSnapshot;
+import com.shipmonk.testingday.model.RatesSnapshotData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,6 +20,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,11 +53,11 @@ class ExchangeRatesControllerTest
     @BeforeEach
     void stubManager()
     {
-        when(ratesManager.getSnapshot(any())).thenAnswer(invocation -> {
-            RatesSnapshot snapshot = new RatesSnapshot(invocation.getArgument(0), "EUR", Instant.now());
-            snapshot.addRate("USD", new BigDecimal("1.051912"));
-            return snapshot;
-        });
+        when(ratesManager.getSnapshot(any())).thenAnswer(invocation -> new RatesSnapshotData(
+            invocation.getArgument(0),
+            "USD",
+            Map.of("EUR", new BigDecimal("0.950650"))
+        ));
     }
 
     @Test

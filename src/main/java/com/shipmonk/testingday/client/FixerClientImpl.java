@@ -1,5 +1,6 @@
 package com.shipmonk.testingday.client;
 
+import com.shipmonk.testingday.model.RatesSnapshotData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
