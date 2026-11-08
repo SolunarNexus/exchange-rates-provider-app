@@ -4,6 +4,8 @@ import com.shipmonk.testingday.manager.RatesManager;
 import com.shipmonk.testingday.manager.exception.RatesSnapshotUnavailableException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 )
 public class ExchangeRatesController
 {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ExchangeRatesController.class);
 
     private final RatesManager ratesManager;
 
@@ -44,6 +48,7 @@ public class ExchangeRatesController
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ProblemDetail handleInvalidFormat(MethodArgumentTypeMismatchException e)
     {
+        LOG.error("Invalid date format provided", e);
         return ProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST,
             e.getName() + " must be a valid date in yyyy-MM-dd format"
@@ -53,6 +58,7 @@ public class ExchangeRatesController
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ProblemDetail handleConstraintViolation(HandlerMethodValidationException e)
     {
+        LOG.error("Invalid request", e);
         String detail = e.getAllErrors().stream()
             .map(MessageSourceResolvable::getDefaultMessage)
             .collect(Collectors.joining("; "));
@@ -62,6 +68,7 @@ public class ExchangeRatesController
     @ExceptionHandler(RatesSnapshotUnavailableException.class)
     public ProblemDetail handleUnavailable(RatesSnapshotUnavailableException e)
     {
+        LOG.error("Rates snapshot is currently unavailable", e);
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
     }
 
