@@ -1,5 +1,7 @@
 package com.shipmonk.testingday.engine;
 
+import com.shipmonk.testingday.engine.exception.UnsupportedCurrencyException;
+import com.shipmonk.testingday.engine.impl.BaseCurrency;
 import com.shipmonk.testingday.model.RatesSnapshotData;
 
 public interface ComputingEngine {

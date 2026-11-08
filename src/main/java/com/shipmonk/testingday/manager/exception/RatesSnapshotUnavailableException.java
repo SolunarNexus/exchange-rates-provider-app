@@ -1,4 +1,4 @@
-package com.shipmonk.testingday.manager;
+package com.shipmonk.testingday.manager.exception;
 
 import java.time.LocalDate;
 

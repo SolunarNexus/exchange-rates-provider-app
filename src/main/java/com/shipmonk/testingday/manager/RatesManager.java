@@ -1,5 +1,6 @@
 package com.shipmonk.testingday.manager;
 
+import com.shipmonk.testingday.manager.exception.RatesSnapshotUnavailableException;
 import com.shipmonk.testingday.model.RatesSnapshotData;
 
 import java.time.LocalDate;

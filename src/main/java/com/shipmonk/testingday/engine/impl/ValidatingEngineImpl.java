@@ -1,5 +1,6 @@
-package com.shipmonk.testingday.engine;
+package com.shipmonk.testingday.engine.impl;
 
+import com.shipmonk.testingday.engine.ValidatingEngine;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;

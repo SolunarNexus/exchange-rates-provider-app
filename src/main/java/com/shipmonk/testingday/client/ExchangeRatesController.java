@@ -1,7 +1,7 @@
-package com.shipmonk.testingday.client.api;
+package com.shipmonk.testingday.client;
 
 import com.shipmonk.testingday.manager.RatesManager;
-import com.shipmonk.testingday.manager.RatesSnapshotUnavailableException;
+import com.shipmonk.testingday.manager.exception.RatesSnapshotUnavailableException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import org.springframework.context.MessageSourceResolvable;

@@ -1,4 +1,4 @@
-package com.shipmonk.testingday.engine;
+package com.shipmonk.testingday.engine.exception;
 
 public class UnsupportedCurrencyException extends RuntimeException {
 

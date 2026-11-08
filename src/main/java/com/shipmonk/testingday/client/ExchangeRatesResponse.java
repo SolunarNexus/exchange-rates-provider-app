@@ -1,4 +1,4 @@
-package com.shipmonk.testingday.client.api;
+package com.shipmonk.testingday.client;
 
 import com.shipmonk.testingday.model.RatesSnapshotData;
 

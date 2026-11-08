@@ -7,7 +7,7 @@ import org.springframework.data.repository.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 
-public interface RatesSnapshotRepository extends Repository<RatesSnapshot, Long>
+public interface RatesSnapshotResourceAccess extends Repository<RatesSnapshot, Long>
 {
 
     RatesSnapshot save(RatesSnapshot snapshot);

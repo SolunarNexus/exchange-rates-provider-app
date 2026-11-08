@@ -1,5 +1,6 @@
 package com.shipmonk.testingday.client.api;
 
+import com.shipmonk.testingday.client.ExchangeRatesController;
 import com.shipmonk.testingday.config.TimeConfig;
 import com.shipmonk.testingday.manager.RatesManager;
 import com.shipmonk.testingday.model.RatesSnapshotData;

@@ -1,12 +1,14 @@
-package com.shipmonk.testingday.manager;
+package com.shipmonk.testingday.manager.impl;
 
-import com.shipmonk.testingday.client.FixerClientException;
-import com.shipmonk.testingday.client.RateSnapshotClient;
-import com.shipmonk.testingday.engine.BaseCurrency;
+import com.shipmonk.testingday.resourceaccess.exception.FixerResourceAccessException;
+import com.shipmonk.testingday.resourceaccess.FixerResourceAccess;
+import com.shipmonk.testingday.engine.impl.BaseCurrency;
 import com.shipmonk.testingday.engine.ComputingEngine;
 import com.shipmonk.testingday.engine.ValidatingEngine;
+import com.shipmonk.testingday.manager.RatesManager;
+import com.shipmonk.testingday.manager.exception.RatesSnapshotUnavailableException;
 import com.shipmonk.testingday.model.RatesSnapshotData;
-import com.shipmonk.testingday.resourceaccess.RatesSnapshotRepository;
+import com.shipmonk.testingday.resourceaccess.RatesSnapshotResourceAccess;
 import com.shipmonk.testingday.resourceaccess.entity.Rate;
 import com.shipmonk.testingday.resourceaccess.entity.RatesSnapshot;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,18 +29,18 @@ public class RatesManagerImpl implements RatesManager {
     // Clients cannot choose the base yet, so it is fixed here.
     private static final BaseCurrency RESPONSE_BASE_CURRENCY = BaseCurrency.USD;
 
-    private final RatesSnapshotRepository ratesSnapshotRepository;
-    private final RateSnapshotClient rateSnapshotClient;
+    private final RatesSnapshotResourceAccess ratesSnapshotResourceAccess;
+    private final FixerResourceAccess rateSnapshotClient;
     private final ValidatingEngine validatingEngine;
     private final ComputingEngine computingEngine;
 
     public RatesManagerImpl(
-        RatesSnapshotRepository ratesSnapshotRepository,
-        RateSnapshotClient rateSnapshotClient,
+        RatesSnapshotResourceAccess ratesSnapshotResourceAccess,
+        FixerResourceAccess rateSnapshotClient,
         ValidatingEngine validatingEngine,
         ComputingEngine computingEngine
     ) {
-        this.ratesSnapshotRepository = ratesSnapshotRepository;
+        this.ratesSnapshotResourceAccess = ratesSnapshotResourceAccess;
         this.rateSnapshotClient = rateSnapshotClient;
         this.validatingEngine = validatingEngine;
         this.computingEngine = computingEngine;
@@ -52,7 +54,7 @@ public class RatesManagerImpl implements RatesManager {
     public RatesSnapshotData getSnapshot(LocalDate day) {
         validatingEngine.validate(day);
 
-        RatesSnapshot snapshot = ratesSnapshotRepository.findByDate(day)
+        RatesSnapshot snapshot = ratesSnapshotResourceAccess.findByDate(day)
             .orElseGet(() -> saveSnapshot(tryFetchSnapshot(day)));
 
         return computingEngine.convertToBaseCurrency(toData(snapshot), RESPONSE_BASE_CURRENCY);
@@ -61,17 +63,17 @@ public class RatesManagerImpl implements RatesManager {
     private RatesSnapshot tryFetchSnapshot(LocalDate day) {
         try {
             return toSnapshot(day, rateSnapshotClient.fetchSnapshot(day));
-        } catch (FixerClientException ex) {
+        } catch (FixerResourceAccessException ex) {
             throw new RatesSnapshotUnavailableException(day, ex);
         }
     }
 
     private RatesSnapshot saveSnapshot(RatesSnapshot snapshot) {
         try {
-            return ratesSnapshotRepository.save(snapshot);
+            return ratesSnapshotResourceAccess.save(snapshot);
         } catch (DataIntegrityViolationException e) {
             // A concurrent request stored the same day first, so use its snapshot.
-            return ratesSnapshotRepository.findByDate(snapshot.getDate()).orElseThrow(() -> e);
+            return ratesSnapshotResourceAccess.findByDate(snapshot.getDate()).orElseThrow(() -> e);
         }
     }
 

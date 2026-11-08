@@ -1,6 +1,8 @@
-package com.shipmonk.testingday.client;
+package com.shipmonk.testingday.resourceaccess.impl;
 
+import com.shipmonk.testingday.resourceaccess.exception.FixerResourceAccessException;
 import com.shipmonk.testingday.model.RatesSnapshotData;
+import com.shipmonk.testingday.resourceaccess.FixerResourceAccess;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -13,7 +15,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 @Component
-public class FixerClientImpl implements RateSnapshotClient {
+public class FixerResourceAccessImpl implements FixerResourceAccess {
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
@@ -21,7 +23,7 @@ public class FixerClientImpl implements RateSnapshotClient {
     private final RestClient restClient;
     private final String accessKey;
 
-    public FixerClientImpl(
+    public FixerResourceAccessImpl(
         @Value("${fixer.base-url}") String baseUrl,
         @Value("${fixer.access-key}") String accessKey
     ) {
@@ -41,7 +43,7 @@ public class FixerClientImpl implements RateSnapshotClient {
         FixerResponse response = fetchResponse(day);
 
         if (hasErrorResponse(response))
-            throw new FixerClientException("Couldn't retrieve rates for " + day + ": " + describeError(response));
+            throw new FixerResourceAccessException("Couldn't retrieve rates for " + day + ": " + describeError(response));
 
         return new RatesSnapshotData(response.date(), response.base(), response.rates());
     }
@@ -61,7 +63,7 @@ public class FixerClientImpl implements RateSnapshotClient {
                 .retrieve()
                 .body(FixerResponse.class);
         } catch (RestClientException e) {
-            throw new FixerClientException("Failed to fetch rates for " + day, e);
+            throw new FixerResourceAccessException("Failed to fetch rates for " + day, e);
         }
     }
 

@@ -1,5 +1,7 @@
-package com.shipmonk.testingday.engine;
+package com.shipmonk.testingday.engine.impl;
 
+import com.shipmonk.testingday.engine.ComputingEngine;
+import com.shipmonk.testingday.engine.exception.UnsupportedCurrencyException;
 import com.shipmonk.testingday.model.RatesSnapshotData;
 import org.springframework.stereotype.Component;
 
