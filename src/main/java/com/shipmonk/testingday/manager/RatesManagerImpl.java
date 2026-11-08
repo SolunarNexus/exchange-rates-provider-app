@@ -3,6 +3,7 @@ package com.shipmonk.testingday.manager;
 import com.shipmonk.testingday.client.FixerClientException;
 import com.shipmonk.testingday.client.RateSnapshotClient;
 import com.shipmonk.testingday.client.RatesSnapshotData;
+import com.shipmonk.testingday.engine.ValidatingEngine;
 import com.shipmonk.testingday.resourceaccess.RatesSnapshotRepository;
 import com.shipmonk.testingday.resourceaccess.entity.RatesSnapshot;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -12,17 +13,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 
 @Service
 public class RatesManagerImpl implements RatesManager {
 
     private final RatesSnapshotRepository ratesSnapshotRepository;
     private final RateSnapshotClient rateSnapshotClient;
+    private final ValidatingEngine validatingEngine;
 
-    public RatesManagerImpl(RatesSnapshotRepository ratesSnapshotRepository, RateSnapshotClient rateSnapshotClient) {
+    public RatesManagerImpl(
+        RatesSnapshotRepository ratesSnapshotRepository,
+        RateSnapshotClient rateSnapshotClient,
+        ValidatingEngine validatingEngine
+    ) {
         this.ratesSnapshotRepository = ratesSnapshotRepository;
         this.rateSnapshotClient = rateSnapshotClient;
+        this.validatingEngine = validatingEngine;
     }
 
     // Runs outside any caller's transaction: the HTTP call should not hold a database connection,
@@ -31,8 +37,7 @@ public class RatesManagerImpl implements RatesManager {
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public RatesSnapshot getSnapshot(LocalDate day) {
-        if (day.isAfter(LocalDate.now(ZoneOffset.UTC)))
-            throw new IllegalArgumentException("No exchange rates exist for future day " + day);
+        validatingEngine.validate(day);
 
         return ratesSnapshotRepository.findByDate(day)
             .orElseGet(() -> {
