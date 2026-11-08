@@ -1,7 +1,5 @@
 package com.shipmonk.testingday.client;
 
-import com.shipmonk.testingday.resourceaccess.entity.RatesSnapshot;
-
 import java.time.LocalDate;
 
 public interface RateSnapshotClient
@@ -12,6 +10,6 @@ public interface RateSnapshotClient
      *
      * @throws FixerClientException if the request fails or Fixer reports an error
      */
-    RatesSnapshot fetchSnapshot(LocalDate day);
+    RatesSnapshotData fetchSnapshot(LocalDate day);
 
 }

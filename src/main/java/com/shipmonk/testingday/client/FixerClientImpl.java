@@ -1,6 +1,5 @@
 package com.shipmonk.testingday.client;
 
-import com.shipmonk.testingday.resourceaccess.entity.RatesSnapshot;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -9,7 +8,6 @@ import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 
@@ -38,19 +36,21 @@ public class FixerClientImpl implements RateSnapshotClient {
     }
 
     @Override
-    public RatesSnapshot fetchSnapshot(LocalDate day) {
+    public RatesSnapshotData fetchSnapshot(LocalDate day) {
         FixerResponse response = fetchResponse(day);
 
         if (hasErrorResponse(response))
             throw new FixerClientException("Fixer returned no rates for " + day + ": " + describeError(response));
 
-        RatesSnapshot snapshot = new RatesSnapshot(day, response.base(), Instant.now());
-        response.rates().forEach(snapshot::addRate);
-        return snapshot;
+        return new RatesSnapshotData(response.date(), response.base(), response.rates());
     }
 
     private static boolean hasErrorResponse(FixerResponse response) {
-        return response == null || !response.success() || response.base() == null || response.rates() == null;
+        return response == null
+            || !response.success()
+            || response.date() == null
+            || response.base() == null
+            || response.rates() == null;
     }
 
     private FixerResponse fetchResponse(LocalDate day) {
@@ -71,7 +71,13 @@ public class FixerClientImpl implements RateSnapshotClient {
         return response.error().code() + " " + response.error().info();
     }
 
-    record FixerResponse(boolean success, String base, Map<String, BigDecimal> rates, FixerError error) {
+    record FixerResponse(
+        boolean success,
+        LocalDate date,
+        String base,
+        Map<String, BigDecimal> rates,
+        FixerError error
+    ) {
     }
 
     record FixerError(int code, String info) {
