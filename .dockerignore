@@ -1,0 +1,8 @@
+# Local PostgreSQL data, secrets and build output must not end up in the build context.
+.data
+.env
+target
+.git
+.idea
+.claude
+*.iml
