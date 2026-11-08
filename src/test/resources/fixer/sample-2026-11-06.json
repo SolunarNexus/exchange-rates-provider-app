@@ -1,0 +1,15 @@
+{
+    "success": true,
+    "timestamp": 1794009599,
+    "historical": true,
+    "base": "EUR",
+    "date": "2026-11-06",
+    "rates": {
+        "BTC": 0.000014714976,
+        "CZK": 24.346956,
+        "EUR": 1,
+        "GBP": 0.834821,
+        "JPY": 176.744329,
+        "USD": 1.115071
+    }
+}
