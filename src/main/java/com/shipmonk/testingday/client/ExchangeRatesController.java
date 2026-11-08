@@ -2,6 +2,10 @@ package com.shipmonk.testingday.client;
 
 import com.shipmonk.testingday.manager.RatesManager;
 import com.shipmonk.testingday.manager.exception.RatesSnapshotUnavailableException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import org.slf4j.Logger;
@@ -17,6 +21,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.time.LocalDate;
 import java.util.stream.Collectors;
 
+@Tag(name = "Exchange rates", description = "Historical exchange rates for a single day")
 @RestController
 @RequestMapping(
     path = "/api/v1/rates"
@@ -33,8 +38,22 @@ public class ExchangeRatesController
         this.ratesManager = ratesManager;
     }
 
+    @Operation(
+        summary = "Get exchange rates for a day",
+        description = """
+            Returns the exchange rates for one day, with USD as the base currency.
+
+            The `day` must be in ISO-8601 format `yyyy-MM-dd` (for example `2026-11-06`), must be a real calendar date
+            and must not be later than today in UTC.
+
+            The first request for a day fetches its rates from external resource (fixer.io) and caches them."""
+    )
     @GetMapping(path = "/{day}")
     public ExchangeRatesResponse getRates(
+        @Parameter(
+            required = true,
+            schema = @Schema(type = "string", format = "date", pattern = "^\\d{4}-\\d{2}-\\d{2}$", example = "2026-11-06")
+        )
         @PathVariable(name = "day")
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         @NotNull(message = "day must not be empty")
