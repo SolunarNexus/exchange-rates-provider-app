@@ -1,0 +1,94 @@
+package com.shipmonk.testingday.manager.impl;
+
+import com.shipmonk.testingday.resourceaccess.exception.FixerResourceAccessException;
+import com.shipmonk.testingday.resourceaccess.FixerResourceAccess;
+import com.shipmonk.testingday.engine.impl.BaseCurrency;
+import com.shipmonk.testingday.engine.ComputingEngine;
+import com.shipmonk.testingday.engine.ValidatingEngine;
+import com.shipmonk.testingday.manager.RatesManager;
+import com.shipmonk.testingday.manager.exception.RatesSnapshotUnavailableException;
+import com.shipmonk.testingday.model.RatesSnapshotData;
+import com.shipmonk.testingday.resourceaccess.RatesSnapshotResourceAccess;
+import com.shipmonk.testingday.resourceaccess.entity.Rate;
+import com.shipmonk.testingday.resourceaccess.entity.RatesSnapshot;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class RatesManagerImpl implements RatesManager {
+
+    // Snapshots are stored in Fixer's base currency (EUR) and converted on retrieval.
+    // Clients cannot choose the base yet, so it is fixed here.
+    private static final BaseCurrency RESPONSE_BASE_CURRENCY = BaseCurrency.USD;
+
+    private final RatesSnapshotResourceAccess ratesSnapshotResourceAccess;
+    private final FixerResourceAccess rateSnapshotClient;
+    private final ValidatingEngine validatingEngine;
+    private final ComputingEngine computingEngine;
+
+    public RatesManagerImpl(
+        RatesSnapshotResourceAccess ratesSnapshotResourceAccess,
+        FixerResourceAccess rateSnapshotClient,
+        ValidatingEngine validatingEngine,
+        ComputingEngine computingEngine
+    ) {
+        this.ratesSnapshotResourceAccess = ratesSnapshotResourceAccess;
+        this.rateSnapshotClient = rateSnapshotClient;
+        this.validatingEngine = validatingEngine;
+        this.computingEngine = computingEngine;
+    }
+
+    // Runs outside any caller's transaction: the HTTP call should not hold a database connection,
+    // and a failed insert has to be recoverable by reading the row stored in the meantime,
+    // which is impossible inside a transaction the failed insert has already aborted.
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public RatesSnapshotData getSnapshot(LocalDate day) {
+        validatingEngine.validate(day);
+
+        RatesSnapshot snapshot = ratesSnapshotResourceAccess.findByDate(day)
+            .orElseGet(() -> saveSnapshot(tryFetchSnapshot(day)));
+
+        return computingEngine.convertToBaseCurrency(toData(snapshot), RESPONSE_BASE_CURRENCY);
+    }
+
+    private RatesSnapshot tryFetchSnapshot(LocalDate day) {
+        try {
+            return toSnapshot(day, rateSnapshotClient.fetchSnapshot(day));
+        } catch (FixerResourceAccessException ex) {
+            throw new RatesSnapshotUnavailableException(day, ex);
+        }
+    }
+
+    private RatesSnapshot saveSnapshot(RatesSnapshot snapshot) {
+        try {
+            return ratesSnapshotResourceAccess.save(snapshot);
+        } catch (DataIntegrityViolationException e) {
+            // A concurrent request stored the same day first, so use its snapshot.
+            return ratesSnapshotResourceAccess.findByDate(snapshot.getDate()).orElseThrow(() -> e);
+        }
+    }
+
+    private static RatesSnapshot toSnapshot(LocalDate day, RatesSnapshotData data) {
+        RatesSnapshot snapshot = new RatesSnapshot(day, data.baseCurrency(), Instant.now());
+        data.rates().forEach(snapshot::addRate);
+        return snapshot;
+    }
+
+    private static RatesSnapshotData toData(RatesSnapshot snapshot) {
+        Map<String, BigDecimal> rates = new HashMap<>();
+        for (Rate rate : snapshot.getRates())
+            rates.put(rate.getCurrency(), rate.getRate());
+
+        return new RatesSnapshotData(snapshot.getDate(), snapshot.getBaseCurrency(), rates);
+    }
+
+}

@@ -1,0 +1,14 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/shipmonk-exchange-rates
+    username: shipmonk
+    password: secret
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+fixer:
+  base-url: http://data.fixer.io/api
+  access-key: ${FIXER_ACCESS_KEY}
