@@ -40,7 +40,7 @@ public class FixerClientImpl implements RateSnapshotClient {
         FixerResponse response = fetchResponse(day);
 
         if (hasErrorResponse(response))
-            throw new FixerClientException("Fixer returned no rates for " + day + ": " + describeError(response));
+            throw new FixerClientException("Couldn't retrieve rates for " + day + ": " + describeError(response));
 
         return new RatesSnapshotData(response.date(), response.base(), response.rates());
     }
