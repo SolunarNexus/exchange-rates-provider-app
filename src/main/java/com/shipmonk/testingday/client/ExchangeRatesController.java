@@ -89,7 +89,7 @@ public class ExchangeRatesController
     public ProblemDetail handleUnavailable(RatesSnapshotUnavailableException e)
     {
         LOG.error("Rates snapshot is currently unavailable", e);
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
     }
 
 }
