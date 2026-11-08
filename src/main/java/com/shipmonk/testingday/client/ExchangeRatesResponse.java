@@ -18,8 +18,8 @@ public record ExchangeRatesResponse(
 
     @Schema(
         description = "Units of each currency that one unit of the base currency buys, keyed by ISO 4217 code "
-            + "and sorted alphabetically",
-        example = "{\"CZK\": 21.83444462280877, \"EUR\": 0.8968038806497523, \"USD\": 1}"
+            + "and sorted alphabetically.",
+        example = "{\"BTC\": 0.000013, \"CZK\": 21.83, \"EUR\": 0.90, \"USD\": 1.00}"
     )
     SortedMap<String, BigDecimal> rates
 )

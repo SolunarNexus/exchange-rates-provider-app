@@ -41,7 +41,8 @@ public class ExchangeRatesController
     @Operation(
         summary = "Get exchange rates for a day",
         description = """
-            Returns the exchange rates for one day, with USD as the base currency.
+            Returns the exchange rates for one day, with USD as the base currency. Rates are rounded to 2 decimal
+            places; rates below 0.1 are rounded after their first 2 non-zero decimal digits (e.g. `0.000013`).
 
             The `day` must be in ISO-8601 format `yyyy-MM-dd` (for example `2026-11-06`), must be a real calendar date
             and must not be later than today in UTC.

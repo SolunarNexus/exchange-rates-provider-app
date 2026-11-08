@@ -143,18 +143,15 @@ class RatesManagerImplTest {
             .hasMessageContaining("USD");
     }
 
-    /**
-     * Expected values are the sample's EUR rates divided by its USD rate (1.115071), computed independently.
-     */
     private static void assertConvertedToDefaultBase(RatesSnapshotData result) {
         assertThat(result.date()).isEqualTo(DAY);
         assertThat(result.baseCurrency()).isEqualTo("USD");
         assertThat(result.rates()).hasSize(SAMPLE_RATE_COUNT);
-        assertThat(result.rates().get("USD")).isEqualByComparingTo("1");
-        assertThat(result.rates().get("EUR")).isCloseTo(new BigDecimal("0.8968038806497523"), withinPercentage(1e-10));
-        assertThat(result.rates().get("CZK")).isCloseTo(new BigDecimal("21.83444462280877"), withinPercentage(1e-10));
-        assertThat(result.rates().get("GBP")).isCloseTo(new BigDecimal("0.7486707124479069"), withinPercentage(1e-10));
-        assertThat(result.rates().get("BTC")).isCloseTo(new BigDecimal("0.00001319644758046797"), withinPercentage(1e-10));
+        assertThat(result.rates().get("USD")).isEqualTo(new BigDecimal("1.00"));
+        assertThat(result.rates().get("EUR")).isEqualTo(new BigDecimal("0.90"));
+        assertThat(result.rates().get("CZK")).isEqualTo(new BigDecimal("21.83"));
+        assertThat(result.rates().get("GBP")).isEqualTo(new BigDecimal("0.75"));
+        assertThat(result.rates().get("BTC")).isEqualTo(new BigDecimal("0.000013"));
     }
 
     private static RatesSnapshot storedSnapshot(RatesSnapshotData data) {
