@@ -4,7 +4,7 @@ services:
   database:
     image: postgres:14-alpine
     volumes:
-      - ./.data/db-local:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=shipmonk-exchange-rates
       - POSTGRES_USER=shipmonk
@@ -30,3 +30,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/shipmonk-exchange-rates
     ports:
       - "127.0.0.1:8080:8080"
+
+volumes:
+  db-data:
