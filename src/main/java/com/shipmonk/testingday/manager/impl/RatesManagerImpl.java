@@ -21,6 +21,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class RatesManagerImpl implements RatesManager {
@@ -33,6 +37,7 @@ public class RatesManagerImpl implements RatesManager {
     private final FixerResourceAccess rateSnapshotClient;
     private final ValidatingEngine validatingEngine;
     private final ComputingEngine computingEngine;
+    private final ConcurrentMap<LocalDate, CompletableFuture<RatesSnapshot>> inFlight = new ConcurrentHashMap<>();
 
     public RatesManagerImpl(
         RatesSnapshotResourceAccess ratesSnapshotResourceAccess,
@@ -54,10 +59,40 @@ public class RatesManagerImpl implements RatesManager {
     public RatesSnapshotData getSnapshot(LocalDate day) {
         validatingEngine.validate(day);
 
-        RatesSnapshot snapshot = ratesSnapshotResourceAccess.findByDate(day)
-            .orElseGet(() -> saveSnapshot(tryFetchSnapshot(day)));
+        RatesSnapshot snapshot = ratesSnapshotResourceAccess
+            .findByDate(day)
+            .orElseGet(() -> fetchAndSave(day));
 
         return computingEngine.convertToBaseCurrency(toData(snapshot), RESPONSE_BASE_CURRENCY);
+    }
+
+    private RatesSnapshot fetchAndSave(LocalDate day) {
+        CompletableFuture<RatesSnapshot> mine = new CompletableFuture<>();
+        CompletableFuture<RatesSnapshot> existing = inFlight.putIfAbsent(day, mine);
+        if (existing != null)
+            return await(existing);
+
+        try {
+            RatesSnapshot snapshot = ratesSnapshotResourceAccess.findByDate(day)
+                .orElseGet(() -> saveSnapshot(tryFetchSnapshot(day)));
+            mine.complete(snapshot);
+            return snapshot;
+        } catch (RuntimeException e) {
+            mine.completeExceptionally(e);
+            throw e;
+        } finally {
+            inFlight.remove(day, mine);
+        }
+    }
+
+    private static RatesSnapshot await(CompletableFuture<RatesSnapshot> future) {
+        try {
+            return future.join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof RuntimeException cause)
+                throw cause;
+            throw e;
+        }
     }
 
     private RatesSnapshot tryFetchSnapshot(LocalDate day) {
